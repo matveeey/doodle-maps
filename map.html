@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Map</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <style>
@@ -23,11 +24,6 @@
 
         var markers = {};
 
-        var lastClickedCoords = {
-                latitude: 0,
-                longitude: 0
-            };
-        
         function addPoint(lat, lng) {
             var marker_id = Object.keys(markers).length;
             var marker = L.marker([lat, lng]).addTo(map);
@@ -43,13 +39,47 @@
             // Putting click coordinates on a map to container
             lastClickedCoords.latitude = lat;
             lastClickedCoords.longitude = lng;
+            
+            saveClickedCoords(lastClickedCoords.latitude, lastClickedCoords.longitude);
         });
 
-        function getClickedCoords() {
-            
+        var lastClickedCoords = {
+                latitude: 0,
+                longitude: 0
+            };
+        
+        function saveClickedCoords(latitude, longitude) {
+            $.ajax({
+                url: 'http://127.0.0.1:5000/save_coords',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ 'latitude': latitude, 'longitude': longitude }),
+                success: function(response) {
+                    console.log(response.message);
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
         }
 
+        function loadClickedCoords() {
+            $.ajax({
+                url: 'http://127.0.0.1:5000/get_coords',
+                type: 'GET',
+                success: function(response) {
+                    var latitude = response.latitude;
+                    var longitude = response.longitude;
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
 
+        function getClickedCoords() {
+            loadClickedCoords();
+        }
     </script>
 </body>
 </html>

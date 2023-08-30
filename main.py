@@ -1,7 +1,8 @@
 import sys
+import requests # for receiving coordinates from the server
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QListWidget, QPushButton, QLabel
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QUrl
 from PyQt5.QtGui import QIcon
 
 class MapApp(QMainWindow):
@@ -16,7 +17,7 @@ class MapApp(QMainWindow):
         layout = QVBoxLayout()
 
         self.web_view = QWebEngineView()
-        self.web_view.setHtml(open("map.html").read())
+        self.web_view.setHtml(open("map.html", encoding="utf-8").read())
         layout.addWidget(self.web_view)
 
         self.add_point_button = QPushButton("Add Point")
@@ -50,22 +51,23 @@ class MapApp(QMainWindow):
 
         self.web_view.page().runJavaScript(f"addPoint({lat}, {lng}, {marker_id});")
 
-    def move_point(self, marker_id, lat, lng):
-        for idx, point in enumerate(self.points):
-            if point[2] == marker_id:
-                self.points[idx] = (lat, lng, marker_id)
-                break
-        self.update_point_list()
+    def load_coordinates_from_server(self):
+        try:
+            response = requests.get('http://127.0.0.1:5000/get_coords')
+            data = response.json()
+            
+            latitude = data['latitude']
+            longitude = data['longitude']
+            self.add_point(latitude, longitude)
 
-    def set_point_label(self, lat, lng):
-        self.point_label.setText(f"Clicked Coordinates: Lat {lat}, Lng {lng}")
-
+            print(f'Coordinates from server: Latitude {latitude}, Longitude {longitude}')
+        except Exception as e:
+            print(f'Error while loading coordinates from server: {e}')
+            
     def emit_add_point_signal(self):
-        print("trying to envoke GetClickedCoords from JS")
+        print("Trying to envoke GetClickedCoords from JS")
         self.web_view.page().runJavaScript("getClickedCoords();")
-
-    def receive_point_from_js(self, lat, lng):
-        self.add_point_signal.emit(lat, lng)
+        self.load_coordinates_from_server()
 
 
 if __name__ == "__main__":
